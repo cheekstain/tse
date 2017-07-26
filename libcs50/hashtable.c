@@ -38,9 +38,14 @@ typedef struct hashtable {
 hashtable_t *hashtable_new(const int num_slots)
 {
 	hashtable_t *ht = count_malloc(sizeof(hashtable_t));
+	if (ht == NULL) {
+		return NULL;
+	}
 	ht->slots = num_slots;
 	ht->array = count_calloc(num_slots, sizeof(struct set*));
-
+	if (ht->array == NULL) {
+		return NULL;
+	}
 	// initialize array sets
 	for (int i = 0; i < num_slots; i++) {
 		ht->array[i] = set_new();
@@ -49,11 +54,7 @@ hashtable_t *hashtable_new(const int num_slots)
 		}
 	} 
 
-	if (ht == NULL || ht->array == NULL) {
-		return NULL; // error allocating 
-	} else {
-		return ht;
-	}
+	return ht;
 }
 
 /**************** hashtable_insert() ****************/

@@ -79,11 +79,10 @@ bool set_insert(set_t *set, const char *key, void *item) {
 static setnode_t *setnode_new(const char *key, void *item) 
 {
 	setnode_t *node = count_malloc(sizeof(setnode_t));
-
 	char *key_copy = count_malloc(sizeof(char) * (strlen(key) + 1));
-	strcpy(key_copy, key);
 
-	if (node != NULL) {
+	if (node != NULL && key_copy != NULL) {
+		strcpy(key_copy, key);
 		node->item = item;
 		node->key = key_copy;
 		node->next = NULL;

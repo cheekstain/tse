@@ -10,10 +10,12 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include <webpage.h>
-#include <hashtable.h>
-#include <bag.h>
-#include <crawler.h>
+#include "../libcs50/webpage.h"
+#include "../libcs50/hashtable.h"
+#include "../libcs50/bag.h"
+#include "../libcs50/memory.h"
+#include "crawler.h"
+
 
 /**************** file-local global variables ****************/
 /* none */
@@ -21,9 +23,6 @@
 /**************** global functions ****************/
 /* that is, visible outside this file */
 /* see crawler.h for comments about exported functions */
-void crawl(char* seed_url, char* page_directory, int max_depth);
-void explore_webpage(webpage_t* page, bag_t* unexplored_pages, 
-				hashtable_t* seen_urls);
 
 /**************** local functions ****************/
 static void hashdelete(void *item); 
@@ -39,33 +38,40 @@ int main(int argc, const char* argv[])
 	} 
 
 	// check seed url
-	char* seed_url = argv[1]
+	char* seed_url = count_malloc(sizeof(char) * (strlen(argv[1])+1));
+	strcpy(seed_url, argv[1]);
 	if (!IsInternalURL(seed_url)) {
 		fprintf(stderr, "not a valid seed url\n");
 		exit(2);
 	}
 	
 	char str[80];
+	char* page_directory = count_malloc(sizeof(char) * (strlen(argv[1])+1));
+	strcpy(page_directory, argv[2]);
 	strcpy(str, argv[2]);
 	strcat(str, "/.crawler");
-	if (fopen(str, "w") == NULL) {
+
+	FILE *fp = fopen(str, "w");
+	if (fp == NULL) {
 		fprintf (stderr, "directory does not exist or is not writable\n");
 		exit(3);
 	} else {
-		fclose(str);
-		char* page_directory = argv[2];
+		fclose(fp);
 	}
-	free(str);
+	count_free(str);
 
 	int max_depth;
 	if (sscanf(argv[3], "%d", &max_depth) == 0) {
-		fprintf(stderr, "max depth must be an integer greater than 0\n");
+		fprintf(stderr, "max depth must be an int greater than 0\n");
 		exit(4);
 	}
 
 	if (!crawl(seed_url, page_directory, max_depth)) {
 		exit(5);
 	}
+
+	count_free(seed_url);
+	count_free(page_directory);
 }
 
 /**************** crawler() ****************/
@@ -73,7 +79,7 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 {
 	// initialize bag & hashtable
 	bag_t* unexplored_pages = bag_new();
-	hashtable_t* seen_urls = hashtable_new();
+	hashtable_t* seen_urls = hashtable_new(20);
 	int current_depth = 0;
 
 	if (unexplored_pages == NULL || seen_urls == NULL) {
@@ -82,26 +88,28 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 	}
 	
 	// initilize seed page
-	const char* dummy = "a";
+	char* dummy = "a";
 	webpage_t* seed_page = webpage_new(seed_url, current_depth, NULL);
 	bag_insert(unexplored_pages, seed_page);
 	hashtable_insert(seen_urls, seed_url, dummy);
 
 	int id = 1;
 	// crawl while bag is empth
-	while ((current_page = bag_extract(unexplored_pages)) != NULL) {
+	webpage_t *current_page;
+	while (current_page != NULL) {
 		if (!webpage_fetch(current_page)) {
 			fprintf(stderr, "error with html\n");
 			return false;
 		}
 		
-		if (!page_saver(current_page, page_directory, id)) {
-			return false;
-		}
+		page_saver(current_page, page_directory, id);
 		
-		if ((int depth = webpage_getDepth(current_page)) < max_depth) {
-			explore_webpage(current_page, unexplored_pages, seen_urls);
+		int depth = webpage_getDepth(current_page);
+		if (depth < max_depth) {
+			explore_webpage(current_page, unexplored_pages, 
+					seen_urls);
 		}
+		current_page = bag_extract(unexplored_pages);
 	}
 
 	// clean up at the end
@@ -118,12 +126,13 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
 	char *result;
 	int depth = webpage_getDepth(page) + 1;
 
-	const char* dummy = "a";
+	char* dummy = "a";
 	while ((pos = webpage_getNextURL(page, pos, &result)) > 0) {
     	if (result != NULL) {
     		if (IsInternalURL(result)) {
     			if(hashtable_insert(seen_urls, result, dummy)) {
-    				webpage_t* new_page = webpage_new(result, depth, NULL);
+    				webpage_t* new_page = webpage_new(result, depth,
+					       	NULL);
     				bag_insert(unexplored_pages, new_page);
     			}
     		}
@@ -143,7 +152,7 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
  }
 
 
-bool page_saver(webpage_t* page, char* page_directory, int id) 
+void page_saver(webpage_t* page, char* page_directory, int id) 
 {
 	// create file name
 	char str[120];
@@ -155,20 +164,21 @@ bool page_saver(webpage_t* page, char* page_directory, int id)
 	
 	// create new file
 	FILE *fp = fopen(str, "w");
-	if (f == NULL) {
+	if (fp == NULL) {
     	fprintf(stderr, "error opening file %d\n", id);
 	}
 
 	// write to file
-	char* url = webpage_getUrl(page);
+	char* url = webpage_getURL(page);
 	if (url == NULL) {
 		fprintf(stderr, "error writing url for file %d\n", id);
 	} else {
 		fprintf(fp, "%s\n", url);
+		count_free(url);
 	}
 	
 	int depth = webpage_getDepth(page);
-	if (depth == NULL) {
+	if (depth < 0) {
 		fprintf(stderr, "error writing depth for file %d\n", id);
 	} else {
 		fprintf(fp, "%d\n", depth);
@@ -179,14 +189,16 @@ bool page_saver(webpage_t* page, char* page_directory, int id)
 		fprintf(stderr, "error writing html for file %d\n", id);
 	} else {
 		fprintf(fp, "%s", html);
+		count_free(html);
 	}
 	
+	
 	if (fclose(fp) != 0) {
-		fprintf(stderr, "error closing file %d\n", id)
+		fprintf(stderr, "error closing file %d\n", id);
 	}
 
-	free(str);
-	free(num);
+	count_free(str);
+	count_free(num);
 }
 
 
