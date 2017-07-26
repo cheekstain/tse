@@ -25,6 +25,9 @@ void crawl(char* seed_url, char* page_directory, int max_depth);
 void explore_webpage(webpage_t* page, bag_t* unexplored_pages, 
 				hashtable_t* seen_urls);
 
+/**************** local functions ****************/
+static void hashdelete(void *item); 
+
 /**************** main() ****************/
 
 int main(int argc, const char* argv[])
@@ -84,20 +87,28 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 	bag_insert(unexplored_pages, seed_page);
 	hashtable_insert(seen_urls, seed_url, dummy);
 
+	int id = 1;
 	// crawl while bag is empth
 	while ((current_page = bag_extract(unexplored_pages)) != NULL) {
 		if (!webpage_fetch(current_page)) {
 			fprintf(stderr, "error with html\n");
 			return false;
 		}
-		page_saver(current_page, page_directory);
+		
+		if (!page_saver(current_page, page_directory, id)) {
+			return false;
+		}
 		
 		if ((int depth = webpage_getDepth(current_page)) < max_depth) {
 			explore_webpage(current_page, unexplored_pages, seen_urls);
 		}
 	}
 
-	
+	// clean up at the end
+	bag_delete(unexplored_pages, webpage_delete);
+	hashtable_delete(seen_urls, hashdelete);
+
+	return true;
 }
 
 void explore_webpage(webpage_t* page, bag_t* unexplored_pages, 
@@ -121,9 +132,61 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
     }
 }
 
-void page_saver(webpage_t* page, char* page_directory) 
+/* delete each item in the hash table
+ * code modified from bagtest.c
+ */
+ static void hashdelete(void *item)
+ {
+     if (item) {
+            count_free(item);
+    }
+ }
+
+
+bool page_saver(webpage_t* page, char* page_directory, int id) 
 {
+	// create file name
+	char str[120];
+	char num[100];
+	sprintf(num, "%d", id);
+	strcpy(str, page_directory);
+	strcat(str, "/");
+	strcat(str, num);
 	
+	// create new file
+	FILE *fp = fopen(str, "w");
+	if (f == NULL) {
+    	fprintf(stderr, "error opening file %d\n", id);
+	}
+
+	// write to file
+	char* url = webpage_getUrl(page);
+	if (url == NULL) {
+		fprintf(stderr, "error writing url for file %d\n", id);
+	} else {
+		fprintf(fp, "%s\n", url);
+	}
+	
+	int depth = webpage_getDepth(page);
+	if (depth == NULL) {
+		fprintf(stderr, "error writing depth for file %d\n", id);
+	} else {
+		fprintf(fp, "%d\n", depth);
+	}
+
+	char* html = webpage_getHTML(page);
+	if (html == NULL) {
+		fprintf(stderr, "error writing html for file %d\n", id);
+	} else {
+		fprintf(fp, "%s", html);
+	}
+	
+	if (fclose(fp) != 0) {
+		fprintf(stderr, "error closing file %d\n", id)
+	}
+
+	free(str);
+	free(num);
 }
 
 
