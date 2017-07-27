@@ -29,6 +29,6 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
 
 /* Write page HTML to file, includes depth and URL.
  */
-void page_saver(webpage_t* page, char* page_directory, int id);
+bool page_saver(webpage_t* page, char* page_directory, int id);
 
 #endif // __CRAWLER_H
