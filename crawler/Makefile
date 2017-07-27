@@ -8,20 +8,20 @@ OBJS = ../libcs50/hashtable.o ../libcs50/bag.o ../libcs50/webpage.o ../libcs50/m
 LIBS = ../libcs50/libcs50.a
 
 CC = gcc
-CFLAGS = -Wall -pedantic -std=c11 -ggdb -I../libcs50
+CFLAGS = -Wall -pedantic -std=c11 -ggdb -L../libcs50
 MAKE = make
 
-$(PROG): crawler.o $(OBJS) ../libcs50/libcs50.a 
-	$(CC) $(CFLAGS) -DNORMAL $^ $(LIBS) -o $@
+$(PROG): crawler.o 
+	$(CC) $(CFLAGS) $^ $(LIBS) -o crawler
 
 crawler.o: crawler.h
-hashtable.o: ../libcs50/hashtable.h
-bag.o: ../libcs50/bag.h
-webpage.o: ../libcs50/webpage.h
-memory.o: ../libcs50/memory.h
-jhash.o: ../libcs50/jhash.h
-set.o: ../libcs50/set.h
-file.o: ../libcs50/file.h
+ hashtable.o: ../libcs50/hashtable.h
+ bag.o: ../libcs50/bag.h
+ webpage.o: ../libcs50/webpage.h
+ memory.o: ../libcs50/memory.h
+ jhash.o: ../libcs50/jhash.h
+ set.o: ../libcs50/set.h
+ file.o: ../libcs50/file.h
 
 .PHONY: unittest unit clean
 

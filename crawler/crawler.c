@@ -25,11 +25,11 @@
 /* see crawler.h for comments about exported functions */
 
 /**************** local functions ****************/
-static void hashdelete(void *item); 
+//static void hashdelete(void *item); 
 
 /**************** main() ****************/
 
-#ifdef NORMAL
+#ifndef UNIT_TEST
 int main(int argc, const char* argv[])
 {
 	// check number of arguments
@@ -82,7 +82,7 @@ int main(int argc, const char* argv[])
 	count_free(seed_url);
 	count_free(page_directory);
 }
-#endif // NORMAL
+#endif // UNIT_TEST
 
 /**************** crawler() ****************/
 bool crawl(char* seed_url, char* page_directory, int max_depth)
@@ -112,7 +112,7 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 	webpage_t *current_page = bag_extract(unexplored_pages);
 	while (current_page != NULL) {
 		if (!webpage_fetch(current_page)) {
-			fprintf(stderr, "error with html\n");
+			fprintf(stderr, "page does not exist\n");
 			return false;
 		}
 		
@@ -126,12 +126,14 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 			explore_webpage(current_page, unexplored_pages, 
 					seen_urls);
 		}
+		webpage_delete(current_page);
 		current_page = bag_extract(unexplored_pages);
 	}
 
 	// clean up at the end
 	bag_delete(unexplored_pages, webpage_delete);
-	hashtable_delete(seen_urls, hashdelete);
+	hashtable_delete(seen_urls, NULL);
+	
 
 	return true;
 }
@@ -160,13 +162,13 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
 
 /* delete each item in the hash table
  * code modified from bagtest.c
- */
+ *
  static void hashdelete(void *item)
  {
      if (item) {
             count_free(item);
     }
- }
+ }*/
 
 
 bool page_saver(webpage_t* page, char* page_directory, int id) 
@@ -248,6 +250,7 @@ int test_pagesaver()
 	// print webpage to file
 	EXPECT(page_saver(page, "./unit_data/", 1));
 
+	// clean up
 	webpage_delete(page);	
 
 	EXPECT(count_net() == 0);
@@ -298,7 +301,7 @@ int test_explorewebpage()
 	explore_webpage(page, unexplored, seen);
 	printf("printing unexplored bag:\n");
 	bag_print(unexplored, stdout, simpleprint);
-	printf("\n");
+	printf("\n\n");
 	
 	//clean up
 	bag_delete(unexplored, webpage_delete);
