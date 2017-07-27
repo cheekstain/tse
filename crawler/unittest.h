@@ -1,3 +1,5 @@
+// preprocessing macro for unit test
+// taken from cs50 lecture
 // each test should start by setting the result count to zero
 #define START_TEST_CASE(name) int _failures=0; char *_testname = (name);
 

@@ -10,22 +10,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <assert.h>
 #include "../libcs50/webpage.h"
 #include "../libcs50/hashtable.h"
 #include "../libcs50/bag.h"
 #include "../libcs50/memory.h"
 #include "crawler.h"
 
-
-/**************** file-local global variables ****************/
-/* none */
-
 /**************** global functions ****************/
 /* that is, visible outside this file */
 /* see crawler.h for comments about exported functions */
-
-/**************** local functions ****************/
-//static void hashdelete(void *item); 
 
 /**************** main() ****************/
 
@@ -50,6 +44,7 @@ int main(int argc, const char* argv[])
 		exit(2);
 	}
 	
+	// check directory
 	char* str = count_malloc(sizeof(char) * (strlen(argv[2])+10));
 	char* page_directory = count_malloc(sizeof(char) * (strlen(argv[2])+1));
 	if (str == NULL || page_directory == NULL) {
@@ -69,12 +64,14 @@ int main(int argc, const char* argv[])
 	}
 	count_free(str);
 
+	// check max depth
 	int max_depth;
-	if ((sscanf(argv[3], "%d", &max_depth) == 0) || max_depth < 0) {
-		fprintf(stderr, "max depth must be an int greater than 0\n");
+	if ((sscanf(argv[3], "%d", &max_depth) == 0) || max_depth < 0 || max_depth > 10) {
+		fprintf(stderr, "max depth must be an int greater than 0 and less than 10\n");
 		exit(4);
 	}
-
+	
+	// calls the crawler
 	if (!crawl(seed_url, page_directory, max_depth)) {
 		exit(5);
 	}
@@ -84,7 +81,7 @@ int main(int argc, const char* argv[])
 }
 #endif // UNIT_TEST
 
-/**************** crawler() ****************/
+/**************** crawl() ****************/
 bool crawl(char* seed_url, char* page_directory, int max_depth)
 {
 	// initialize bag & hashtable
@@ -108,26 +105,30 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 	hashtable_insert(seen_urls, seed_url, dummy);
 
 	int id = 1;
-	// crawl while bag is empth
+
+	// crawl through pages while bag is empty
 	webpage_t *current_page = bag_extract(unexplored_pages);
 	while (current_page != NULL) {
-		if (!webpage_fetch(current_page)) {
-			fprintf(stderr, "page does not exist\n");
-			return false;
-		}
-		
-		if (!page_saver(current_page, page_directory, id)) {
-			return false;
-		}
-		id++;
+		if (!webpage_fetch(current_page)){
+			char* name = webpage_getURL(current_page);
+			fprintf(stderr, "%s does not exist\n", name);
+		} else {	
+			
+			if (!page_saver(current_page, page_directory, id)) {
+				return false;
+			}
 
-		int depth = webpage_getDepth(current_page);
-		if (depth < max_depth) {
-			explore_webpage(current_page, unexplored_pages, 
-					seen_urls);
+			id++;
+
+			int depth = webpage_getDepth(current_page);
+			if (depth < max_depth) {
+				explore_webpage(current_page, unexplored_pages, 
+						seen_urls);
+			}
 		}
 		webpage_delete(current_page);
 		current_page = bag_extract(unexplored_pages);
+		
 	}
 
 	// clean up at the end
@@ -152,23 +153,13 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
     			if(hashtable_insert(seen_urls, result, dummy)) {
     				webpage_t* new_page = webpage_new(result, depth,
 					       	NULL);
-    				bag_insert(unexplored_pages, new_page);
-    			}
+    				bag_insert(unexplored_pages, new_page);	
+			}
     		}
     		free(result);
     	}    
     }
 }
-
-/* delete each item in the hash table
- * code modified from bagtest.c
- *
- static void hashdelete(void *item)
- {
-     if (item) {
-            count_free(item);
-    }
- }*/
 
 
 bool page_saver(webpage_t* page, char* page_directory, int id) 
@@ -239,7 +230,7 @@ int test_pagesaver()
 	START_TEST_CASE("pagesaver");
 
 	// set up webpage
-	char *url = "http://old-www.cs.dartmouth.edu/~cs50/index.html";
+	char *url = "http://old-www.cs.dartmouth.edu/~cs50/data/tse/wikipedia/";
 	EXPECT(url != NULL);
 	webpage_t *page = webpage_new(url, 0, NULL);
 	EXPECT(page != NULL);
