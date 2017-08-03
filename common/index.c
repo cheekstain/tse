@@ -87,6 +87,7 @@ void index_save(index_t *ht, char* filename)
 		fprintf(stderr, "error closing file %s\n", filename);
 		exit(2);
 	}
+		
 }
 
 /* print_word()

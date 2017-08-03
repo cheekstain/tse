@@ -67,10 +67,9 @@ void start_index(char* page_directory, char* filename)
 
 	index_build(page_directory, ht);
 	index_save(ht, filename);
-
+	
 	//clean up
 	index_delete(ht);
-
 }
 
 /************* index_build() ***************/
@@ -81,6 +80,7 @@ void index_build(char* page_directory, index_t *ht)
 	int id = 1;
 	filename = make_filename(page_directory, id);
 	if (filename == NULL) {
+		count_free(filename);
 		exit(1);
 	}
 
@@ -88,18 +88,13 @@ void index_build(char* page_directory, index_t *ht)
 	fp = fopen(filename, "r");
 	while (fp != NULL) {
 		// update index with page
-		index_page(ht, fp, filename, id);
-
-		// prepare for next file
-		if (fclose(fp) != 0) {
-			fprintf(stderr, "error closing file %s\n", filename);
-			exit(4);
-		}
-
-		count_free(filename);
+		index_page(ht, fp, filename, id);	
+		
 		id++;
+		count_free(filename); //added
 		filename = make_filename(page_directory, id);
 		if (filename == NULL) {
+			count_free(filename);
 			exit(1);
 		}
 

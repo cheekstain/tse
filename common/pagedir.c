@@ -68,7 +68,7 @@ bool page_saver(webpage_t* page, char* page_directory, int id)
 /*************** is_crawler_directory() ****************/
 bool is_crawler_directory(char* page_directory){
 	// create string page_dreictory/.crawler 
-	int length = 9 + strlen(page_directory);
+	int length = 10 + strlen(page_directory);
 	char *str = count_malloc(sizeof(char) * length);
 	if (str == NULL) {
 		fprintf(stderr, "error allocating string\n");
