@@ -91,7 +91,7 @@ void index_build(char* page_directory, index_t *ht)
 		index_page(ht, fp, filename, id);	
 		
 		id++;
-		count_free(filename); //added
+		count_free(filename); 
 		filename = make_filename(page_directory, id);
 		if (filename == NULL) {
 			count_free(filename);

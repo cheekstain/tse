@@ -27,7 +27,7 @@ int main(int argc, char* argv[])
 	char* new_file = argv[2];
 	index_t *ht = index_load(old_file);
 	index_save(ht, new_file);
-
+	
 	// clean up
 	index_delete(ht);
 	exit(0);

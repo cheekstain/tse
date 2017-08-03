@@ -96,7 +96,7 @@ bool is_crawler_directory(char* page_directory){
 /***************** make_filename() ****************/
 char* make_filename(char* page_directory, int id) {
 	char* num = count_malloc(sizeof(char) * 10);
-	char* str = count_malloc(sizeof(char) * (strlen(page_directory) + 11));
+	char* str = count_malloc(sizeof(char) * (strlen(page_directory) + 10));
 	if (num == NULL || str == NULL) {
 		fprintf(stderr, "error allocating filename\n");
 		return NULL;
@@ -105,7 +105,6 @@ char* make_filename(char* page_directory, int id) {
 	// copy components into one string
 	sprintf(num, "%d", id);
 	strcpy(str, page_directory);
-	strcat(str, "/");
 	strcat(str, num);
 
 	count_free(num);

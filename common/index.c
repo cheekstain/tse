@@ -134,10 +134,16 @@ index_t* index_load(char *filename)
 	int count;
 	while((word = readwordp(fp)) != NULL) {
 		counters_t *ctrs = counters_new();
+		if (ctrs == NULL){
+			fprintf(stderr, "ctrs allocation failed\n");
+			exit(1);
+		}
 		while (fscanf(fp, "%d %d ", &id, &count) == 2) {
 			counters_set(ctrs, id, count);
+			
 		}
 		index_insert(ht, word, ctrs);
+		count_free(word); // TESTING
 	}
 
 	if (fclose(fp) != 0) {
@@ -163,7 +169,7 @@ void index_page(index_t* ht, FILE *fp, char* filename, int id)
                 fprintf(stderr, "error closing file %s\n", filename);
                 exit(4);
         }
-
+	
 	// create dummy webpage 
 	char *url = "/";
 	webpage_t *page = webpage_new(url, 0, html);
@@ -171,8 +177,8 @@ void index_page(index_t* ht, FILE *fp, char* filename, int id)
 	// read words
 	int pos = 0;
 	char *result;
-	while ((pos = webpage_getNextURL(page, pos, &result)) > 0) {
-		if (result != NULL && strlen(result) > 2) {
+	while ((pos = webpage_getNextWord(page, pos, &result)) > 0) {
+		if (result != NULL && strlen(result) > 2) {	
 			add_word(ht, result, id);
 		}
 		count_free(result);
