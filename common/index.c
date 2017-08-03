@@ -15,6 +15,7 @@
 #include "../libcs50/counters.h"
 #include "../libcs50/memory.h"
 #include "../libcs50/file.h"
+#include "../libcs50/webpage.h"
 #include "word.h"
 #include "index.h"
 
@@ -153,43 +154,35 @@ index_t *index_load(char *filename)
 /************** index_page() ***************/
 void index_page(index_t* ht, FILE *fp, char* filename, int id)
 {
-        char *str;
-        while ((str = readwordp(fp)) != NULL) {
-                int c;
-                char word[100];
-                char *wp = word;
-
-                for (int i = 0; i < strlen(str); i++) {
-                        c = str[i];
-                        if (isalpha(c)) {
-                                if (strlen(word) == 0) {
-                                        wp += sprintf(word, "%c", c);
-                                } else {
-                                        wp += sprintf(wp, "%c", c);
-                                }
-                        } else {
-                                if (strlen(word) > 3) {
-                                        add_word(ht, word, id);
-                                }	
-				memset(word, '\0', 100);
-                                wp = word;
-                        }
-                }
-
-		if (strlen(word) > 3) {
-			add_word(ht, word, id);
-                }
-
-                count_free(wp);
+	// read html from file to string
+        char *html;
+        if ((html = readfilep(fp)) == NULL) {
+                fprintf(stderr, "error reading file %s\n", filename);
+		exit(4);
         }
-
-        if (fclose(fp) != 0) {
+	
+	if (fclose(fp) != 0) {
                 fprintf(stderr, "error closing file %s\n", filename);
                 exit(4);
         }
 
-        count_free(str);
-}
+	// create dummy webpage 
+	char *url = "/";
+	webpage_t *page = webpage_new(url, 0, html);
+
+	// read words
+	int pos = 0;
+	char *result;
+	while ((pos = webpage_getNextURL(page, pos, &result)) > 0) {
+		if (result != NULL && strlen(result) > 2) {
+			add_word(ht, result, id);
+		}
+		count_free(result);
+	}
+
+	// clean up
+	webpage_delete(page);
+ }
 
 /********************* add_word() ******************/
 void add_word(index_t *ht, char *word, int id) {
