@@ -1,5 +1,4 @@
-/*
- * crawler.h - header file for crawler
+/* crawler.h - header file for crawler
  * 
  * The TSE crawler is a standalone program that crawls the web and retrieves
  * webpages starting from a “seed” URL. It parses the seed webpage, extracts 
@@ -24,6 +23,6 @@ bool crawl(char* seed_url, char* page_directory, int max_depth);
 /* Explores a webpage to find links. Checks URLs before adding where 
  * appropriate. Creates new webpages for found URLs.
  */
-void explore_webpage(webpage_t* page, bag_t* unexplored_pages, 
-				hashtable_t* seen_urls);
+void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
+                                hashtable_t* seen_urls);
 #endif // __CRAWLER_H

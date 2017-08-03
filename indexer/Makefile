@@ -10,7 +10,7 @@ CFLAGS = -Wall -pedantic -std=c11 -ggdb -I../libcs50 -I../common
 MAKE = make
 
 
-.PHONY: clean indexer indextest all
+.PHONY: clean valgrind indexer indextest all
 
 all: indexer indextest
 

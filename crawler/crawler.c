@@ -1,8 +1,8 @@
 /*
  * crawler.c - CS50 Lab 4, part of TSE
  * 
- * see crawler.h for more information.
- * 
+ * See crawler.h for details.
+ *
  * Christina Lu, July 2017
  */ 
 
@@ -19,8 +19,7 @@
 #include "crawler.h"
 
 /**************** global functions ****************/
-/* that is, visible outside this file */
-/* see crawler.h for comments about exported functions */
+/* see crawler.h for information about global functions */
 
 /**************** main() ****************/
 
@@ -140,6 +139,7 @@ bool crawl(char* seed_url, char* page_directory, int max_depth)
 	return true;
 }
 
+/**************** explore_webpage() ******************/
 void explore_webpage(webpage_t* page, bag_t* unexplored_pages, 
 				hashtable_t* seen_urls)
 {

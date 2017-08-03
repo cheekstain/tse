@@ -16,7 +16,7 @@ crawler.o: crawler.h
 
 .PHONY: unittest unit test clean
 
-unittest: crawler.h crawler.c $(LIBS) unittest.h
+unittest: crawler.c $(LIBS) 
 	$(CC) $(CFLAGS) -DUNIT_TEST crawler.c $(LIBS) -o unittest
 
 unit: unittest
