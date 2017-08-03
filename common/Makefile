@@ -6,19 +6,26 @@
 
 # object files, and the target library
 OBJS = index.o pagedir.o word.o
-LIB = common.a
+LIB = libcommon.a
 
-CFLAGS = -Wall -pedantic -std=c11 -ggdb
+
+CFLAGS = -Wall -pedantic -std=c11 -ggdb 
 CC = gcc
 MAKE = make
 
 # build the library by archiving object files
 $(LIB): $(OBJS)
-	ar cr $(LIB) $(OBJS)
+	ar cr $(LIB) $(OBJS) 
+
 # dependencies
-index.o: index.h
-pagedir.o: pagedir.h
 word.o: word.h
+
+index.o: word.h index.h
+	$(CC) $(CFLAGS) -I../libcs50 -L../libcs50 -lcs50 -c index.c
+
+pagedir.o: pagedir.h
+	$(CC) $(CFLAGS) -I../libcs50 -L../libcs50 -lcs50 -c pagedir.c
+
 
 .PHONY: clean sourcelist 
 

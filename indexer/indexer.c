@@ -9,13 +9,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#include "../libcs50/memory.h"
-#include "../common/index.h"
-#include "../common/pagedir.h"
-#include "indexer.h"
+#include "memory.h"
+#include "index.h"
+#include "pagedir.h"
 
 /**************** global functions ****************/
-/* see indexer.h for comments about exported functions */
+/*
+ * Index does the bulk of the indexer's work. It takes parameters 
+ * page_directory and filename that have already been checked by main() and
+ * initializes an index structure, builds it from the files within 
+ * page_directory, and saves the index to the given filename, before cleaning
+ * up at the end.
+ */
+void start_index(char* page_directory, char* filename);
+
+/*
+ * This method takes the page_directory and index, and builds the index from
+ * the files within the given page_directory. 
+ */
+void index_build(char* page_directory, index_t *ht);
 
 /**************** main() ********************/
 
@@ -29,11 +41,13 @@ int main(int argc, char* argv[])
 	}
 
 	// check directory
-	if (!is_crawler_directory(argv[1])) {
+	char* page_directory = argv[1];
+	if (!is_crawler_directory(page_directory)) {
 		exit(3);
 	}
 
 	// check file
+	char* filename = argv[2];
 	FILE *fp = fopen(filename, "w");
 	if (fp == NULL) {
 		fprintf(stderr, "file is not writable\n");
@@ -43,11 +57,11 @@ int main(int argc, char* argv[])
 	}
 
 	// calls the indexer
-	index(page_directory, filename);
+	start_index(page_directory, filename);
 }
 
 /*************** index() *****************/
-void index(char* page_directory, char* filename)
+void start_index(char* page_directory, char* filename)
 {
 	index_t *ht = index_new(800);
 

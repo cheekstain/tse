@@ -11,11 +11,11 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-#include "../libcs50/hashtable.h"
-#include "../libcs50/counters.h"
-#include "../libcs50/memory.h"
-#include "../libcs50/file.h"
-#include "../libcs50/webpage.h"
+#include "hashtable.h"
+#include "counters.h"
+#include "memory.h"
+#include "file.h"
+#include "webpage.h"
 #include "word.h"
 #include "index.h"
 
@@ -112,7 +112,7 @@ static void print_count(void *arg, const int key, int count)
 }
 
 /************** index_load() ***************/
-void index_load(index_t* ht, char *filename)
+index_t* index_load(char *filename)
 {
 	FILE *fp;
 	fp = fopen(filename, "r");
@@ -122,7 +122,7 @@ void index_load(index_t* ht, char *filename)
 	}
 
 	int size = lines_in_file(fp);
-	ht = index_new(size);
+	index_t *ht = index_new(size);
 	if (ht == NULL) {
 		fprintf(stderr, "index_load index allocation failed\n");
 		exit(1);
@@ -145,6 +145,7 @@ void index_load(index_t* ht, char *filename)
 	}
 	
 	count_free(word);
+	return ht;
 }
 
 /************** index_page() ***************/

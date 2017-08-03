@@ -13,6 +13,9 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include "../libcs50/hashtable.h"
+#include "../libcs50/counters.h"
+
 
 /**************** global types ****************/
 typedef hashtable_t index_t; // opaque to users of the module
@@ -48,9 +51,9 @@ void index_delete(index_t *ht);
 void index_save(index_t *ht, char* filename);
 
 /* Loads information from an index file and builds an index data structure in
- * the memory.
+ * the memory. Returns index structure.
  */
-void index_load(index_t* ht, char* filename);
+index_t* index_load(char* filename);
 
 /* Loads information from a crawler file and builds an index data structure in
  * the memory. Takes pointer to hashtable.

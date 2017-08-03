@@ -3,14 +3,14 @@
 # Christina Lu, July 2017
 
 PROG = crawler
-LIBS = ../libcs50/libcs50.a ../common/common.a
+LIBS = ../common/libcommon.a ../libcs50/libcs50.a 
 
 CC = gcc
-CFLAGS = -Wall -pedantic -std=c11 -ggdb -L../libcs50 -L../common
+CFLAGS = -Wall -pedantic -std=c11 -ggdb -I../libcs50 -I../common
 MAKE = make
 
-$(PROG): crawler.o 
-	$(CC) $(CFLAGS) $^ $(LIBS) -o crawler
+$(PROG): crawler.o $(LIBS)
+	$(CC) $(CFLAGS) $^ $(LIBS) -o $@
 
 crawler.o: crawler.h
 

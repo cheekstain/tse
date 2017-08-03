@@ -10,9 +10,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
-#include "../libcs50/webpage.h"
-#include "../libcs50/memory.h"
-#include "../libcs50/file.h"
+#include "webpage.h"
+#include "memory.h"
+#include "file.h"
 #include "pagedir.h"
 
 /************************ global functions **************************/

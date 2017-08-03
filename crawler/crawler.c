@@ -11,11 +11,11 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
-#include "../libcs50/webpage.h"
-#include "../libcs50/hashtable.h"
-#include "../libcs50/bag.h"
-#include "../libcs50/memory.h"
-#include "../common/pagedir.h"
+#include "webpage.h"
+#include "hashtable.h"
+#include "bag.h"
+#include "memory.h"
+#include "pagedir.h"
 #include "crawler.h"
 
 /**************** global functions ****************/
