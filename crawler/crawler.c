@@ -15,6 +15,7 @@
 #include "../libcs50/hashtable.h"
 #include "../libcs50/bag.h"
 #include "../libcs50/memory.h"
+#include "../common/pagedir.h"
 #include "crawler.h"
 
 /**************** global functions ****************/
@@ -162,58 +163,6 @@ void explore_webpage(webpage_t* page, bag_t* unexplored_pages,
 }
 
 
-bool page_saver(webpage_t* page, char* page_directory, int id) 
-{
-	// create file name
-	char* num = count_malloc(sizeof(char) * 10);
-	char* str = count_malloc(sizeof(char) * (strlen(page_directory) + 11));
-	if (num == NULL || str == NULL) {
-		fprintf(stderr, "error allocating for page_saver\n");
-		return false;
-	}
-	sprintf(num, "%d", id);
-	strcpy(str, page_directory);
-	strcat(str, "/");
-	strcat(str, num);
-	
-	// create new file
-	FILE *fp = fopen(str, "w");
-	if (fp == NULL) {
-    		fprintf(stderr, "error opening file %d\n", id);
-		return false;
-	}
-
-	// write to file
-	char* url = webpage_getURL(page);
-	if (url == NULL) {
-		fprintf(stderr, "error writing url for file %d\n", id);
-	} else {
-		fprintf(fp, "%s\n", url);
-	}
-	
-	int depth = webpage_getDepth(page);
-	if (depth < 0) {
-		fprintf(stderr, "error writing depth for file %d\n", id);
-	} else {
-		fprintf(fp, "%d\n", depth);
-	}
-
-	char* html = webpage_getHTML(page);
-	if (html == NULL) {
-		fprintf(stderr, "error writing html for file %d\n", id);
-	} else {
-		fprintf(fp, "%s", html);
-	}
-	
-	
-	if (fclose(fp) != 0) {
-		fprintf(stderr, "error closing file %d\n", id);
-	}
-
-	count_free(str);
-	count_free(num);
-	return true;
-}
 
 
 /********************************************************

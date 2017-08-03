@@ -17,9 +17,6 @@
 #include "word.h"
 #include "index.h"
 
-/**************** file-local global variables ****************/
-/* none */
-
 /**************** global functions ****************/
 /* see index.h for comments about exported functions */
 
