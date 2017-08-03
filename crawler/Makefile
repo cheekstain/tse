@@ -3,10 +3,10 @@
 # Christina Lu, July 2017
 
 PROG = crawler
-LIBS = ../libcs50/libcs50.a
+LIBS = ../libcs50/libcs50.a ../common/common.a
 
 CC = gcc
-CFLAGS = -Wall -pedantic -std=c11 -ggdb -L../libcs50
+CFLAGS = -Wall -pedantic -std=c11 -ggdb -L../libcs50 -L../common
 MAKE = make
 
 $(PROG): crawler.o 
