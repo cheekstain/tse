@@ -40,7 +40,7 @@ char *readuntil(FILE *fp, int (*stopfunc)(int c) );
 char *readfilep(FILE *fp);
 
 /**************** readlinep ****************/
-/* 
+/*
  * Read a line from the file into a null-terminated string,
  * and return a pointer to it; caller must later free() the pointer.
  * The string returned includes NO newline, and a terminating null.

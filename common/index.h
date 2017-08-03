@@ -48,9 +48,21 @@ void index_delete(index_t *ht);
  */
 bool index_save(index_t *ht, char* filename);
 
-/* Loads information from a file and builds an index data structure in the
+/* Loads information from an index file and builds an index data structure in the
  * memory. Returns the index structure.
  */
 index_t *index_load(char* filename);
+
+/* Loads information from a crawler file and builds an index data structure in the 
+ * memory. Returns the index structure.
+ */
+index_t *index_page(char* filename);
+
+/* Adds word to index. Checks if the word is present in the index already and 
+ * increments counter if it is, creates new counter and inserts into hashtable if
+ * it is not. Takes word and int ID of the document the word was read from.
+ */
+void add_word(index_t *ht, char *word, int id);
+
 
 #endif // __INDEX_H

@@ -108,11 +108,16 @@ index_t *index_load(char* filename)
 {
 	FILE *fp;
 	fp = fopen(filename, "r");
-	
-	index_t *ht = index_new(500);
-	if (ht == NULL) {
-		fprintf(stderr, "index_load allocation failed");
+	if (fp == NULL) {
+		fprintf(stderr, "file %s not found\n", filename);
 		return NULL;
+	}
+
+	int size = lines_in_file(fp);
+	index_t *ht = index_new(size);
+	if (ht == NULL) {
+		fprintf(stderr, "index_load index allocation failed\n");
+		exit(1);
 	}
 		
 	char *word;
@@ -120,7 +125,7 @@ index_t *index_load(char* filename)
 	int count;
 	while((word = readwordp(fp)) != NULL) {
 		counters_t *ctrs = counters_new();
-		while (fscanf(fp, "%d %d", &id, &count) == 2) {
+		while (fscanf(fp, "%d %d ", &id, &count) == 2) {
 			counters_set(ctrs, id, count);
 		}
 		index_insert(ht, word, ctrs);
@@ -132,7 +137,82 @@ index_t *index_load(char* filename)
 	}
 	
 	count_free(word);
-	// free others?
 	
 	return ht;
+}
+
+/************** index_page() ***************/
+index_t *index_page(char* filename)
+{
+        FILE *fp;
+        fp = fopen(filename, "r");
+        if (fp == NULL) {
+                fprintf(stderr, "file %s not found\n", filename);
+                return NULL;
+        }
+
+        index_t *ht = index_new(800);
+        if (ht == NULL) {
+                fprintf(stderr, "index_page index allocation failure");
+                return NULL;
+        }
+
+        char *str;
+        while ((str = readwordp(fp)) != NULL) {
+                int c;
+                char word[100];
+                char *wp = word;
+
+                for (int i = 0; i < strlen(str); i++) {
+                        c = string[i];
+                        if (isalpha(c)) {
+                                if (strlen(word) == 0) {
+                                        wp += sprintf(word, "%c", c);
+                                } else {
+                                        wp += sprintf(wp, "%c", c);
+                                }
+                        } else {
+                                if (strlen(word) > 0) {
+                                        add_word(ht, word, id);
+                                        memset(word, '\0', 100);
+                                        wp = word;
+                                }
+                        }
+                        if (strlen(word) > 0) {
+                                add_word(ht, word, id);
+
+                        }
+                }
+                count_free(wp);
+        }
+
+        if (fclose(fp) != 0) {
+                fprintf(stderr, "error closing file %s\n", filename);
+                return NULL;
+        }
+
+        count_free(str);
+
+        return ht;
+}
+
+/********************* add_word() ******************/
+void add_word(index_t *ht, char *word, int id) {
+        NormalizeWord(word);
+        counters_t *ctrs = index_find(ht, word);
+
+        if (ctrs != NULL) {
+                // word already exists, increment counter
+                counters_add(ctrs, id);
+        } else {
+                // add new word to table, create new counter
+                ctrs = counters_new();
+                if (ctrs == NULL) {
+                        fprintf(stderr, "failed to allocate counter\n");
+                        exit(1);
+                }
+
+                counters_add(ctrs, id);
+                index_insert(ht, word, ctrs);
+        }
 }
