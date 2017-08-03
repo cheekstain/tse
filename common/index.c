@@ -71,13 +71,13 @@ static void delete_helper(void *item)
 }
  
 /*************** index_save() *****************/
-bool index_save(index_t *ht, char* filename)
+void index_save(index_t *ht, char* filename)
 {
 	// create new file
 	FILE *fp = fopen(filename, "w");
 	if (fp == NULL) {
 		fprintf(stderr, "error opening file %s\n", filename);
-		return false;
+		exit(2);
 	}
 
 	// write to file
@@ -85,10 +85,8 @@ bool index_save(index_t *ht, char* filename)
 
 	if (fclose(fp) != 0) {
 		fprintf(stderr, "error closing file %s\n", filename);
-		return false;
+		exit(2);
 	}
-	
-	return true;
 }
 
 /* print_word()
@@ -114,17 +112,17 @@ static void print_count(void *arg, const int key, int count)
 }
 
 /************** index_load() ***************/
-index_t *index_load(char *filename)
+void index_load(index_t* ht, char *filename)
 {
 	FILE *fp;
 	fp = fopen(filename, "r");
 	if (fp == NULL) {
 		fprintf(stderr, "file %s not found\n", filename);
-		return NULL;
+		exit(2);
 	}
 
 	int size = lines_in_file(fp);
-	index_t *ht = index_new(size);
+	ht = index_new(size);
 	if (ht == NULL) {
 		fprintf(stderr, "index_load index allocation failed\n");
 		exit(1);
@@ -143,12 +141,10 @@ index_t *index_load(char *filename)
 
 	if (fclose(fp) != 0) {
 		fprintf(stderr, "error closing file %s\n", filename);
-		return NULL;
+		exit(2);
 	}
 	
 	count_free(word);
-	
-	return ht;
 }
 
 /************** index_page() ***************/

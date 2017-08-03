@@ -44,23 +44,22 @@ void index_delete(index_t *ht);
 /* Writes the data structure in the memory to an external file. Takes index
  * to be written to the file, and path name of file to write to. Writes in the
  * format "word doc_id count [doc_id count]..." one line per word.
- * Returns true upon sucess, false if error.
  */
-bool index_save(index_t *ht, char* filename);
+void index_save(index_t *ht, char* filename);
 
-/* Loads information from an index file and builds an index data structure in the
- * memory. Returns the index structure.
+/* Loads information from an index file and builds an index data structure in
+ * the memory.
  */
-index_t *index_load(char* filename);
+void index_load(index_t* ht, char* filename);
 
-/* Loads information from a crawler file and builds an index data structure in the 
- * memory. Returns the index structure.
+/* Loads information from a crawler file and builds an index data structure in
+ * the memory. Takes pointer to hashtable.
  */
 void index_page(index_t* ht, FILE *fp, char* filename, int id);
 
 /* Adds word to index. Checks if the word is present in the index already and 
- * increments counter if it is, creates new counter and inserts into hashtable if
- * it is not. Takes word ad int ID of the document the word was read from.
+ * increments counter if it is, creates new counter and inserts into hashtable
+ * if it is not. Takes word ad int ID of the document the word was read from.
  */
 void add_word(index_t *ht, char *word, int id);
 
