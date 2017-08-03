@@ -1,7 +1,9 @@
 /* 
  * indexer.c - CS50 Lab 5, part of TSE
  *
- * see indexer.h for more information.
+ * The TSE *indexe* is a standalone program that reads the document files
+ * produced by the TSE crawler, builds an index, and writes that index to a 
+ * file. 
  *
  * Christina Lu, August 2017
  */

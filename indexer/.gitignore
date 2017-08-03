@@ -1,0 +1,4 @@
+data/ 
+# any data files
+vgcore.*
+# core dumps

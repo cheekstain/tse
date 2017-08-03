@@ -26,7 +26,7 @@ typedef struct counter {
 /**************** global types ****************/
 typedef struct counters {
 	struct counter *head;
-	//struct counter *tail;
+	struct counter *tail;
 } counters_t;
 
 /**************** global functions ****************/
@@ -47,7 +47,7 @@ counters_t *counters_new(void)
 	} else {
 		// initialize contents of counters
 		counters->head = NULL;
-		//counters->tail = NULL;
+		counters->tail = NULL;
 		return counters;
 	}
 }
@@ -67,11 +67,14 @@ int counters_add(counters_t *ctrs, const int key)
 		// create a new counter, return value
 		counter_t *new = counter_new(key);
 		if (new != NULL) {
-			// add it to the head of the list
-			new->next = ctrs->head;
-			ctrs->head = new;
-			//ctrs->tail = new;
-			return (*ctrs->head->count);
+			if (ctrs->tail != NULL) {
+				ctrs->tail->next = new;
+			} else {
+				ctrs->head = new;
+			}
+			ctrs->tail = new;
+			*new->count = 1;
+			return *new->count;
 		}
 		return 0;
 	} else {
@@ -131,13 +134,14 @@ void counters_set(counters_t *ctrs, const int key, int count)
 		if (!exist) {
 			counter_t *new = counter_new(key);
 			if (new != NULL) {
-				new->next = ctrs->head;
-				ctrs->head = new;
-
-				// add it to the tail of the list
-				//ctrs->tail->next = new;
-				//ctrs->tail = new;
-				*new->count = count;
+				if (ctrs->tail != NULL) {
+					ctrs->tail->next = new;
+				} else {
+					ctrs->head = new;
+				}
+				ctrs->tail = new;
+				*new->count = 1;
+				
 			}
 		}
 	}
