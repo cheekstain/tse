@@ -12,7 +12,8 @@
 #include <stdbool.h>
 #include "../libcs50/webpage.h"
 #include "../libcs50/memory.h"
-#include "file.h"
+#include "../libcs50/file.h"
+#include "pagedir.h"
 
 /************************ global functions **************************/
 /* see pagedir.h for comments about exported functions */
@@ -22,17 +23,10 @@
 /************************ page_saver() **************************/
 bool page_saver(webpage_t* page, char* page_directory, int id)
 {
-	// create file name
-	char* num = count_malloc(sizeof(char) * 10);
-	char* str = count_malloc(sizeof(char) * (strlen(page_directory) + 11));
-	if (num == NULL || str == NULL) {
-		fprintf(stderr, "error allocating for page_saver\n");
+	char* str = make_filename(page_directory, id);
+	if (str == NULL) {
 		return false;
 	}
-	sprintf(num, "%d", id);
-	strcpy(str, page_directory);
-	strcat(str, "/");
-	strcat(str, num);
 
 	// create new file
 	FILE *fp = fopen(str, "w");
@@ -68,10 +62,10 @@ bool page_saver(webpage_t* page, char* page_directory, int id)
 	}
 
 	count_free(str);
-	count_free(num);
 	return true;
 }
 
+/*************** is_crawler_directory() ****************/
 bool is_crawler_directory(char* page_directory){
 	// create string page_dreictory/.crawler 
 	int length = 9 + strlen(page_directory);
@@ -97,4 +91,23 @@ bool is_crawler_directory(char* page_directory){
 
 	count_free(str);
 	return true;
+}
+
+/***************** make_filename() ****************/
+char* make_filename(char* page_directory, int id) {
+	char* num = count_malloc(sizeof(char) * 10);
+	char* str = count_malloc(sizeof(char) * (strlen(page_directory) + 11));
+	if (num == NULL || str == NULL) {
+		fprintf(stderr, "error allocating filename\n");
+		return NULL;
+	}
+
+	// copy components into one string
+	sprintf(num, "%d", id);
+	strcpy(str, page_directory);
+	strcat(str, "/");
+	strcat(str, num);
+
+	count_free(num);
+	return str;
 }

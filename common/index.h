@@ -30,7 +30,7 @@ index_t *index_new(const int num_slots);
  * Re turn false if key exists in index, any parameter is NULL, or error;
  * return true iff new counters was inserted.
  */
-bool index_insert(index_t *ht, const char *key, counters_t *ct);
+bool index_insert(index_t *ht, char *key, counters_t *ctrs);
 
 /* Return the item associated with the given key;
  * return NULL if hashtable is NULL, key is NULL, key is not found.
@@ -56,11 +56,11 @@ index_t *index_load(char* filename);
 /* Loads information from a crawler file and builds an index data structure in the 
  * memory. Returns the index structure.
  */
-index_t *index_page(char* filename);
+void index_page(index_t* ht, FILE *fp, char* filename, int id);
 
 /* Adds word to index. Checks if the word is present in the index already and 
  * increments counter if it is, creates new counter and inserts into hashtable if
- * it is not. Takes word and int ID of the document the word was read from.
+ * it is not. Takes word ad int ID of the document the word was read from.
  */
 void add_word(index_t *ht, char *word, int id);
 

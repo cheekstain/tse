@@ -10,6 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 #include "../libcs50/hashtable.h"
 #include "../libcs50/counters.h"
 #include "../libcs50/memory.h"
@@ -24,7 +25,8 @@
 typedef hashtable_t index_t;
 
 /**************** local functions *************/
-static void print_word(void *arg, const char *key, void *item);
+static void delete_helper(void *item);
+static void print_word(void *arg, const char *key, void *ctrs);
 static void print_count(void *arg, const int key, int count);
 
 /**************** index_new() ****************/
@@ -42,7 +44,7 @@ index_t *index_new(const int num_slots)
 }
 
 /**************** index_insert() ****************/
-bool index_insert(index_t *ht, const char *key, counters_t *ctrs)
+bool index_insert(index_t *ht, char *key, counters_t *ctrs)
 {
 	NormalizeWord(key);
 	return hashtable_insert(ht, key, ctrs);
@@ -57,7 +59,14 @@ counters_t *index_find(index_t *ht, const char *key)
 /**************** index_delete() ****************/
 void index_delete(index_t *ht)
 {
-	hashtable_delete(ht, counters_delete);
+	hashtable_delete(ht, delete_helper);
+}
+
+static void delete_helper(void *item)
+{
+	if (item) {
+		counters_delete((counters_t*) item);
+	}
 }
  
 /*************** index_save() *****************/
@@ -84,7 +93,7 @@ bool index_save(index_t *ht, char* filename)
 /* print_word()
  * helper function to pass into hashtable_iterate to print each word
  */
-static void print_word(void *arg, const char *key, counters_t ctrs)
+static void print_word(void *arg, const char *key, void *ctrs)
 {
 	FILE *fp = arg;
 		
@@ -104,7 +113,7 @@ static void print_count(void *arg, const int key, int count)
 }
 
 /************** index_load() ***************/
-index_t *index_load(char* filename)
+index_t *index_load(char *filename)
 {
 	FILE *fp;
 	fp = fopen(filename, "r");
@@ -142,21 +151,8 @@ index_t *index_load(char* filename)
 }
 
 /************** index_page() ***************/
-index_t *index_page(char* filename)
+void index_page(index_t* ht, FILE *fp, char* filename, int id)
 {
-        FILE *fp;
-        fp = fopen(filename, "r");
-        if (fp == NULL) {
-                fprintf(stderr, "file %s not found\n", filename);
-                return NULL;
-        }
-
-        index_t *ht = index_new(800);
-        if (ht == NULL) {
-                fprintf(stderr, "index_page index allocation failure");
-                return NULL;
-        }
-
         char *str;
         while ((str = readwordp(fp)) != NULL) {
                 int c;
@@ -164,7 +160,7 @@ index_t *index_page(char* filename)
                 char *wp = word;
 
                 for (int i = 0; i < strlen(str); i++) {
-                        c = string[i];
+                        c = str[i];
                         if (isalpha(c)) {
                                 if (strlen(word) == 0) {
                                         wp += sprintf(word, "%c", c);
@@ -172,28 +168,27 @@ index_t *index_page(char* filename)
                                         wp += sprintf(wp, "%c", c);
                                 }
                         } else {
-                                if (strlen(word) > 0) {
+                                if (strlen(word) > 3) {
                                         add_word(ht, word, id);
-                                        memset(word, '\0', 100);
-                                        wp = word;
-                                }
-                        }
-                        if (strlen(word) > 0) {
-                                add_word(ht, word, id);
-
+                                }	
+				memset(word, '\0', 100);
+                                wp = word;
                         }
                 }
+
+		if (strlen(word) > 3) {
+			add_word(ht, word, id);
+                }
+
                 count_free(wp);
         }
 
         if (fclose(fp) != 0) {
                 fprintf(stderr, "error closing file %s\n", filename);
-                return NULL;
+                exit(4);
         }
 
         count_free(str);
-
-        return ht;
 }
 
 /********************* add_word() ******************/
