@@ -60,7 +60,7 @@ int counters_add(counters_t *ctrs, const int key)
 						counter = counter->next) {
 			if ((*counter->key) == key) { // check if counter exists
 				// increment existing counter, return new value
-				(*counter->count)++;
+				(*counter->count)++;	
 				return (*counter->count);
 			} 
 		}

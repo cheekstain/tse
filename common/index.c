@@ -97,7 +97,7 @@ static void print_word(void *arg, const char *key, void *ctrs)
 {
 	FILE *fp = arg;
 		
-	fprintf(fp, "%s", key);
+	fprintf(fp, "%s", key);	
 	counters_iterate(ctrs, fp, print_count);
 	fprintf(fp, "\n");
 }
@@ -108,7 +108,7 @@ static void print_word(void *arg, const char *key, void *ctrs)
 static void print_count(void *arg, const int key, int count)
 {
 	FILE *fp = arg;
-
+	
 	fprintf(fp,  " %d %d", key, count);
 }
 
@@ -143,7 +143,7 @@ index_t* index_load(char *filename)
 			
 		}
 		index_insert(ht, word, ctrs);
-		count_free(word); // TESTING
+		count_free(word);
 	}
 
 	if (fclose(fp) != 0) {

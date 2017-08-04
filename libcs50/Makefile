@@ -21,7 +21,7 @@ MAKE = make
 
 # Build the library by archiving object files
 $(LIB): $(OBJS)
-	ar cr $(LIB) $(OBJS)
+	cp $(LIB)-`uname` $(LIB)
 
 # Dependencies: object files depend on header files
 bag.o: bag.h
@@ -31,7 +31,7 @@ hashtable.o: hashtable.h set.h jhash.h
 jhash.o: jhash.h
 memory.o: memory.h
 set.o: set.h
-webpage.o: webpage.h file.h memory.h
+webpage.o:  webpage.h
 
 .PHONY: clean sourcelist
 
@@ -42,3 +42,4 @@ sourcelist: Makefile *.md *.c *.h
 # clean up after our compilation
 clean:
 	rm -f $(LIB) *~ *.o
+
