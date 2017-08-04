@@ -1,7 +1,7 @@
 /* 
  * indexer.c - CS50 Lab 5, part of TSE
  *
- * The TSE *indexe* is a standalone program that reads the document files
+ * The TSE *indexer* is a standalone program that reads the document files
  * produced by the TSE crawler, builds an index, and writes that index to a 
  * file. 
  *
@@ -62,7 +62,7 @@ int main(int argc, char* argv[])
 	start_index(page_directory, filename);
 }
 
-/*************** index() *****************/
+/*************** start_index() *****************/
 void start_index(char* page_directory, char* filename)
 {
 	index_t *ht = index_new(800);

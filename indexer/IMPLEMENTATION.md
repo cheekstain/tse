@@ -66,13 +66,11 @@ It then calls `index_insert()` to insert the word, counter pair to the index.
 
 Errors are all printed to stderr, and exit with a non-zero exit code.
 
+### Testing Plan
+The indexer can be tested by: 
 
-
-
-
-
-
-
+* reading from a crawler directory, writing a file, and checking the file
+* reading from an indexer file to an index, and rewriting that index to a file
 
 
 
