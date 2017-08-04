@@ -1,4 +1,17 @@
+#gitignore for indexer/
+
 data/ 
 # any data files
+
 vgcore.*
-# core dumps
+# core dump
+
+*.a
+# any libraries
+
+*.o
+# any object files
+
+indexer
+indextest
+# executables
