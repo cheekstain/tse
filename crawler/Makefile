@@ -16,10 +16,13 @@ crawler.o: crawler.h
 
 .PHONY: unittest unit test clean
 
+
+
 unittest: crawler.c $(LIBS) 
 	$(CC) $(CFLAGS) -DUNIT_TEST crawler.c $(LIBS) -o unittest
 
 unit: unittest
+	rm -rf unit_data/
 	mkdir unit_data/
 	./unittest
 

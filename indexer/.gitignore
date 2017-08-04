@@ -6,11 +6,8 @@ data/
 vgcore.*
 # core dump
 
-*.a
-# any libraries
 
-*.o
-# any object files
+# libraries and object files carry over from top level
 
 indexer
 indextest

@@ -2,6 +2,7 @@
 #
 # David Kotz - April 2016, 2017
 # Xia Zhou - July 2017
+# Christina Lu - August 2017
 
 MAKE = make
 .PHONY: all valgrind clean
