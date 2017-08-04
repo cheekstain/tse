@@ -21,9 +21,15 @@ indextest: indextest.o $(LIBS)
 	$(CC) $(CFLAGS) $^ -o $@
 
 indexer.o: ../libcs50/memory.h ../common/index.h ../common/pagedir.h
+
 indextest.o: ../common/index.h 
+
+test: 
+	chmod +x test.sh
+	./test.sh
 
 clean:
 	rm -f *~ *.o *.dSYM
 	rm -f indexer indextest
+	rm -rf data/
 
