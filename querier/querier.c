@@ -275,13 +275,15 @@ void run_query(index_t *ht, char** words, int count, index_t* and_scores, counte
 	index_save(ht, "test_file");
 	
 	get_scores(ht, words, count, and_scores);
+
 	assertp(final_scores, "Failed to run query\n");
 
 	index_iterate(and_scores, final_scores, aggregate_scores);
-	//counters_print(final_scores, stdout);
+	counters_print(final_scores, stdout);
 	//printf("\n");	
 	
 	all_docs_t all = sort_pages(final_scores);
+	
 	print_results(all);
 	//index_delete(and_scores);
 	//counters_delete(final_scores);
@@ -333,7 +335,7 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 	char* word;
 	index_t* all_scores = scores;
 	//assertp(all_scores, "Failed to intialize index\n");
-
+	
 	for (int i = 0; i < count; i++) {
 		word = words[i];
 		
@@ -344,6 +346,8 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 				scores = counters_new();
 			}
 			
+			
+
 			int j = i + 1;
 			char* next;
 			next = words[j];
@@ -370,8 +374,11 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 			char str[12];
 			char* key = str;
 			sprintf(str, "%d", i);
+			
 			index_insert(all_scores, key, scores);
 			index_save(all_scores, key);
+
+			
 		}
 	}
 
@@ -422,7 +429,7 @@ all_docs_t sort_pages(counters_t* ctrs){
 	doc_t** pages = count_malloc(size * sizeof(doc_t*));
 	all_docs_t all = { pages, 0 };
 	counters_iterate(ctrs, &all, counters_sort);
-
+	
 	return all;
 }
 
@@ -454,14 +461,18 @@ static void counters_sort(void *arg, const int id, int count)
 	int i = size;	
 	pages[i] = new;
 	all->size = size + 1;
+	
 	key = count;		
 	j = i - 1;
 	
 	while (j >= 0 && pages[j]->count < key) {
-		(all->pages)[j+1]->count = pages[j]->count;
+		(all->pages)[j+1]->count = (all->pages)[j]->count;
+		(all->pages)[j+1]->key = (all->pages)[j]->key;
+
 		j = j - 1;
 	}
 	(all->pages)[j+1]->count = key;
+	(all->pages)[j+1]->key = id;
 	(all->pages)[i] = new;
 }
 
