@@ -1,7 +1,9 @@
 /* 
  * querier.c - TSE 'querier' module
  *
- * see querier.h for more information.
+ * The *querier* reads the index produced by the Indexer and the page files
+ * produced by the Crawler, to interactively answer written queries entered by 
+ * the user. 
  *
  * Christina Lu, August 2017
  */
@@ -27,6 +29,16 @@ typedef struct two_counters {
     counters_t *ctrs;
 } two_counters_t;
 
+typedef struct doc {
+	int key;
+	int count;
+} doc_t;
+
+typedef struct all_docs {
+	doc_t** pages;
+	int size;
+} all_docs_t;
+
 /**************** functions ****************/
 bool check_parameters(int argc, char* argv[]);
 
@@ -41,10 +53,17 @@ void run_query(index_t *ht, char** words, int count);
 static void aggregate_scores(void *arg, const char *key, void* ctrs);
 static void sum_scores(void *arg, const int key, int count);
 
-index_t* get_scores(index_t *ht, char** words, int count);
+all_docs_t sort_pages(counters_t* ctrs);
+static void counters_count(void *arg, const int key, int count);
+static void counters_sort(void *arg, const int id, int count);
+
+void get_scores(index_t *ht, char** words, int count, index_t *scores);
 
 static void counters_intersect(counters_t *result, counters_t *ctrs);
 static void counter_intersect_helper(void *arg, int key, int count);
+
+void print_results(all_docs_t all);
+
 
 /**************** main() ****************/
 
@@ -105,11 +124,14 @@ void process_query(char* page_directory, index_t* ht)
 	while ((line = readlinep(stdin)) != NULL) {
 		char** words = count_malloc(sizeof(char*) * 20);
 		int count = fetch_words(line, words);
-		words = realloc(words, sizeof(char*) * count);
+		//words = realloc(words, sizeof(char*) * count);
 		if (count != 0 && words != NULL){
 			print_query(words, count);
 			if (check_query(words, count)) {
 				run_query(ht, words, count);
+				index_delete(and_scores);
+				counters_delete(final_scores);
+
 			}
 		}
 	
@@ -213,7 +235,7 @@ bool check_query(char** words, int count)
 
 /* is_literal() takes a string and returns true if it is a literal and false
  * otherwise. literals: and, or
- */
+*/
 bool is_literal(char* word)
 {
 		
@@ -228,15 +250,20 @@ bool is_literal(char* word)
  */
 void run_query(index_t *ht, char** words, int count)
 {
-	index_t* and_scores = get_scores(ht, words, count);
+	index_t* and_scores = index_new(200);
+	get_scores(ht, words, count, and_scores);
 	counters_t* final_scores = counters_new();
 	assertp(final_scores, "Failed to run query\n");
 
 	index_iterate(and_scores, final_scores, aggregate_scores);
-	counters_print(final_scores, stdout);
-	printf("\n");
-	//rank_results()
-	//print_results()
+	//counters_print(final_scores, stdout);
+	//printf("\n");	
+	
+	all_docs_t all = sort_pages(final_scores);
+	print_results(all);
+	//index_delete(and_scores);
+	//counters_delete(final_scores);
+		
 }
 
 /* aggregate_scores() is a helper function that loops through each counter
@@ -265,11 +292,11 @@ static void sum_scores(void *arg, const int key, int count)
 /* get_scores() returns an index which contains the aggregated scores
  * from all and sequences. it takes the index, the array of words, and count.
  */
-index_t* get_scores(index_t *ht, char** words, int count)
+void get_scores(index_t *ht, char** words, int count, index_t *scores)
 {
 	char* word;
-	index_t* all_scores = index_new(200);
-	assertp(all_scores, "Failed to intialize index\n");
+	index_t* all_scores = scores;
+	//assertp(all_scores, "Failed to intialize index\n");
 
 	for (int i = 0; i < count; i++) {
 		word = words[i];
@@ -278,12 +305,14 @@ index_t* get_scores(index_t *ht, char** words, int count)
 		if (!is_literal(word)) {
 			counters_t *scores = index_find(ht, word);
 			int j = i + 1;
-			char* next = words[j];
+			char* next;
+			next = words[j];
 			while ((j < count) && (strcmp(next, "or") != 0)) {
-				if (!is_literal(next)) { // must be and
-															counters_t *ctrs = index_find(ht, next);
-					counters_intersect(scores, ctrs);
+				if (!is_literal(next)) { // not and	
 					
+					counters_t *ctrs = index_find(ht, next);
+					counters_intersect(scores, ctrs);
+					counters_delete(ctrs);	
 				}
 				j++;
 				if (j < count) {
@@ -295,10 +324,10 @@ index_t* get_scores(index_t *ht, char** words, int count)
 			char* key = str;
 			sprintf(str, "%d", i);
 			index_insert(all_scores, key, scores);
-					}
+		}
 	}
 
-	return all_scores;
+	//return all_scores;
 }
 
 /* counter_intersect() takes two counters and changes the first one to
@@ -314,7 +343,7 @@ static void counters_intersect(counters_t *result, counters_t *ctrs)
         counters_iterate(result, &counters, counter_intersect_helper);
 }
 
-/* counter_intersect_helper() assists counters_intersect()
+/* counter_intersect_helper() asisists counters_intersect()
  */
 static void counter_intersect_helper(void *arg, int key, int count)
 {
@@ -330,31 +359,69 @@ static void counter_intersect_helper(void *arg, int key, int count)
         counters_set(counters->result, key, num);
 }
 
-/* counter_merge() takes two counters and changes the first one to
- * the union of the two, where the ID is the same but the key
- * is set to the added sum of both counts.
- 
-static void counters_merge(counters_t *result, counters_t *ctrs)
-{
-	assertp(result, "Counters merge error\n");
-	assertp(ctrs, "Counters intersect error \n");
+/* sort_pages() takes a counter and iterates over them to sort in 
+ * descending order.
+ */
+all_docs_t sort_pages(counters_t* ctrs){
+	// iterate to find size
+	int size = 0;
+	counters_iterate(ctrs, &size, counters_count);
 	
-	two_counters_t counters = { result, ctrs };
-	counters_iterate(ctrs, &counters, counter_merge_helper);
+	doc_t** pages = count_malloc(size * sizeof(doc_t*));
+	all_docs_t all = { pages, 0 };
+	counters_iterate(ctrs, &all, counters_sort);
+
+	return all;
 }
 
-* counter_merge_helper() assists counters_merge()
- 
-
-static void counter_merge_helper(void *arg, int key, int count)
+/* counter_count() is a helper function that finds the number of
+ * counters within a counters structure.
+ */
+static void counters_count(void *arg, const int key, int count)
 {
-	two_counters_t* counters = arg;
-	
-	int sum = counters_get(counters->result, key) + count;
-	counters_set(counters->result, key, sum);
-	
+	int *size = arg;
+
+	if (size != NULL && count != 0) {
+		(*size)++;
+	}
 }
-*/
+
+/* counters_sort() uses insertion sort to sort an array of counters.
+ */
+static void counters_sort(void *arg, const int id, int count)
+{
+	all_docs_t *all = arg;
+	doc_t** pages = all->pages;
+	int size = all->size;
+	int key, j;
+
+	doc_t *new = (doc_t*)count_malloc(sizeof(doc_t));
+	new->key = id;
+	new->count = count;
+
+	int i = size;	
+	pages[i] = new;
+	all->size = size + 1;
+	key = count;		
+	j = i - 1;
+	
+	while (j >= 0 && pages[j]->count < key) {
+		(all->pages)[j+1]->count = pages[j]->count;
+		j = j - 1;
+	}
+	(all->pages)[j+1]->count = key;
+	(all->pages)[i] = new;
+}
+
+void print_results(all_docs_t all)
+{
+	all_docs_t *everything = &all;
+	int size = everything->size;
+	doc_t** pages = everything->pages;
+	for (int i = 0; i < size; i++) {
+	printf("Doc: %d, Score: %d\n", pages[i]->key, pages[i]->count);
+	}
+}
 
 /*****************************************************
  ******************** unit testing *******************
