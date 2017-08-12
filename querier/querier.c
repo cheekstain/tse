@@ -27,8 +27,11 @@
 /**************** functions ****************/
 bool check_parameters(int argc, char* argv[]);
 void process_query(char* page_directory, index_t* ht);
-void check_query(char** words);
-void fetch_words(char* line, char** words);
+int fetch_words(char* line, char** words);
+void print_query(char** words, int count);
+bool check_query(char** words, int count);
+//int num_elements(char** words);
+bool is_literal(char* word);
 
 /**************** main() ****************/
 
@@ -84,32 +87,30 @@ bool check_parameters(int argc, char* argv[])
 void process_query(char* page_directory, index_t* ht)
 {
 	char* line;
-
+	
+	printf("KEY WORDS:> ");
 	while ((line = readlinep(stdin)) != NULL) {
-		char** words = count_malloc(sizeof(char*) * strlen(line));
-		fetch_words(line, words);
-
-		if (words != NULL) {
-			for (int i = 0; i < 5; i++) {
-				printf("%s\n", words[i]);	
+		char** words = count_malloc(sizeof(char*) * 20);
+		int count = fetch_words(line, words);
+		if (count != 0 && words != NULL){
+			print_query(words, count);
+			if (check_query(words, count)) {
+				//run_query(words)
 			}
-			//check_query(words);
-			//print_query(words);
-			
-			//run_query(words);
 		}
-
+	
 		count_free(words);
 		count_free(line);
-		
+		printf("KEY WORDS:> ");
 	}
 }
 
 /* fetch_words() takes the line to find words from and an intialized array to
  * store all the words in that line to. it considers all alpha characters that
- * are consecutive to be strings.
+ * are consecutive to be strings. all words are normalized before adding to 
+ * they array. it returns the number of words found, or 0 if none/error.
  */
-void fetch_words(char* line, char** words) 
+int fetch_words(char* line, char** words) 
 {
 	int size = strlen(line);
 	int count = 0;
@@ -117,6 +118,16 @@ void fetch_words(char* line, char** words)
 	int c;
 	char* word;
 	char* rest;
+
+	int k;
+	for (int i = 0; i < size; i++) {
+		k = line[i];
+		if (!isalpha(k) && !isspace(k)) {
+			fprintf(stderr, 
+				"Error: bad character '%c' in query\n", k);
+			return 0;
+		}
+	}
 
 	for (int i = 0; i < size; i++) {
 		c = line[i];
@@ -132,17 +143,81 @@ void fetch_words(char* line, char** words)
 		        	v = line[j];
 		        	j++;
 		    	}
-			
+		
 		 	rest = &line[j-1];
 		 	*rest = '\0';			    
 		  	i = j-1;
 		}
-	}
+	}		
+	return count;
 }
 
-void check_query(char** words)
+/* print_query() prints the input, cleaned up. non alpha characters are 
+ * already caught by fetch_words().
+ */
+void print_query(char** words, int count) 
 {
+	printf("Query:");
 
+	for (int i = 0; i < count; i++) {
+		printf(" %s", words[i]);
+	}
+
+	printf("\n");
+}
+
+/* check_query() makes sure that query syntax is valid. it takes an array of
+ * lowercase words. it returns true if it is valid, false otherwise.
+ */
+bool check_query(char** words, int count)
+{
+	
+	char* word = words[0];
+	char* prev = word;
+	
+	for (int i = 0; i < count; i++) {
+		word = words[i];
+		
+		// check syntax
+		if ((i == 0) && is_literal(word)) {
+			fprintf(stderr, "Error: '%s' cannot be first\n", word);
+			return false;
+		} else if ((i == count - 1) && is_literal(word)) {
+			fprintf(stderr, "Error: '%s' cannot be last\n", word);
+			return false;
+		} else if ((i != 0) && is_literal(prev) && is_literal(word)) {
+			fprintf(stderr, 
+			 "Error: '%s' and '%s' cannot be adjacent\n", prev, word);
+			return false;
+		}
+
+		prev = word;
+	}
+	return true;
+}
+
+/* num_elements() takes an array of strings and returns the number of elements
+ * in the array.
+ */
+int num_elements(char** words)
+{
+	int num = 0;
+	while (words[num] != NULL) {
+		num++;
+	}
+	return num;
+}
+
+/* is_literal() takes a string and returns true if it is a literal and false
+ * otherwise. literals: and, or
+ */
+bool is_literal(char* word)
+{
+		
+	if ((strcmp(word, "and") == 0) || (strcmp(word, "or") == 0)) {
+		return true;
+	} 
+	return false;
 }
 
 /*****************************************************
@@ -158,23 +233,84 @@ int test_fetch_words()
 {
 	START_TEST_CASE("fetch_words()");
 
-	char line[] = " HELLO  hi i am christina pls!work";
+	char first[] = " HELLO  hi i am christina pls work ";
+	char** array1  = count_malloc(7 * sizeof(char*));
+	int count1 = fetch_words(first, array1);
 	
-	char** words = count_malloc(strlen(line) * sizeof(char*));
-	fetch_words(line, words);
-	EXPECT(words != NULL);
+	if (count1 != 0) {
+		EXPECT(array1 != NULL);
 
-	for (int i = 0; i < 7; i++) {
-		printf("%s\n", words[i]);
+		for (int i = 0; i < count1; i++) {
+			printf("%s\n", array1[i]);
+		}	
+	}
+	
+	char second[] = "a second test";
+	char** array2 = count_malloc(3 * sizeof(char*));
+	int count2 = fetch_words(second, array2);
+	
+	if (count2 != 0) {
+		EXPECT(array2 != NULL);
+
+		for (int i = 0; i < count2; i++) {
+			printf("%s\n", array2[i]);
+		}
 	}
 
-	count_free(words);
+	count_free(array1);
+	count_free(array2);
+	
 
 	EXPECT(count_net() == 0);
 
 	END_TEST_CASE;
 	return TEST_RESULT;
 }
+
+////////////////////////////////////////
+// tests check_query() and print_query();
+int test_check_query()
+{
+	START_TEST_CASE("check_query()");
+
+	// test 0
+	char line0[] = "and then there were none";
+	char** words0 = count_malloc(5 * sizeof(char*));
+	int count0 = fetch_words(line0, words0);
+	print_query(words0, count0);
+	EXPECT(!check_query(words0, count0));
+	count_free(words0);
+	
+	// test 1
+	char line1[] = "either or";
+	char** words1 = count_malloc(2 * sizeof(char*));
+	int count1 = fetch_words(line1, words1);
+	print_query(words1, count1);	
+	EXPECT(!check_query(words1, count1));
+	count_free(words1);
+
+	// test 2
+	char line2[] = "fight or flight";
+	char** words2 = count_malloc(3 * sizeof(char*));
+	int count2 = fetch_words(line2, words2);
+	print_query(words2, count2);
+	EXPECT(check_query(words2, count2));
+	count_free(words2);
+
+	// test 3
+	char line3[] = "christina and or lu";
+	char** words3 = count_malloc(4 * sizeof(char*));
+	int count3 = fetch_words(line3, words3);
+	print_query(words3, count3);
+	EXPECT(!check_query(words3, count3));
+	count_free(words3);
+
+	EXPECT(count_net() == 0);
+
+	END_TEST_CASE;
+	return TEST_RESULT;
+}
+
 
 ////////////////////////////////////////
 // main()
@@ -184,6 +320,7 @@ int main(const int argc, const char *argv[])
 	int failed = 0;
 
 	failed += test_fetch_words();
+	failed += test_check_query();
 
 	if (failed) {
 		printf("FAIL %d test cases\n", failed);
