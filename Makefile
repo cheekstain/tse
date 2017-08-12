@@ -13,11 +13,7 @@ all:
 	$(MAKE) -C common
 	$(MAKE) -C crawler
 	$(MAKE) -C indexer
-
-############## valgrind all programs ##########
-valgrind: all
-	$(MAKE) -C crawler valgrind
-	$(MAKE) -C indexer valgrind
+	$(MAKE) -C querier
 
 ############### TAGS for emacs users ##########
 TAGS:  Makefile */Makefile */*.c */*.h */*.md */*.sh
@@ -31,6 +27,8 @@ clean:
 	$(MAKE) -C common clean
 	$(MAKE) -C crawler clean
 	$(MAKE) -C indexer clean
+	$(MAKE) -C querier clean
+
 
 
 

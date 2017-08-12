@@ -2,7 +2,7 @@
 
 Christina Lu - July 2017
 
-To build, run `make`.
+To build, run `make all`.
 
 To clean up, run `make clean`.
 

@@ -13,7 +13,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-#include "bag.h"
 #include "counters.h"
 #include "memory.h"
 #include "pagedir.h"
@@ -47,26 +46,25 @@ void process_query(char* page_directory, index_t* ht);
 int fetch_words(char* line, char** words);
 void print_query(char** words, int count);
 bool check_query(char** words, int count);
+void run_query(index_t *ht, char** words, int count, char* page_directory);
 
 bool is_literal(char* word);
 
-void run_query(index_t *ht, char** words, int count, index_t* and_scores, counters_t* final_scores);
-void docs_delete(all_docs_t all);
+void get_scores(index_t *ht, char** words, int count, index_t *scores);
 static void aggregate_scores(void *arg, const char *key, void* ctrs);
 static void sum_scores(void *arg, const int key, int count);
 
 all_docs_t sort_pages(counters_t* ctrs);
+void docs_delete(all_docs_t all);
+
 static void counters_count(void *arg, const int key, int count);
 static void counters_sort(void *arg, const int id, int count);
-
-void get_scores(index_t *ht, char** words, int count, index_t *scores);
 
 static void counters_intersect(counters_t *result, counters_t *ctrs);
 static void counter_intersect_helper(void *arg, int key, int count);
 static void duplicate_counter(void *arg, const int key, int count);
 
-
-void print_results(all_docs_t all);
+static void print_results(all_docs_t all, char* page_directory);
 
 
 /**************** main() ****************/
@@ -123,28 +121,15 @@ bool check_parameters(int argc, char* argv[])
 void process_query(char* page_directory, index_t* ht)
 {
 	char* line;
-	//bag_t *index_to_delete = bag_new();
-	//bag_t *counters_to_delete = bag_new();
-	//assertp(index_to_delete, "Error initializing bag.\n");
-	//assertp(counters_to_delete, "Error initializing bag.\n");
-
-
+	
 	printf("KEY WORDS:> ");
 	while ((line = readlinep(stdin)) != NULL) {
 		char** words = count_malloc(sizeof(char*) * 20);
 		int count = fetch_words(line, words);
-		//words = realloc(words, sizeof(char*) * count);
 		if (count != 0 && words != NULL){
 			print_query(words, count);
 			if (check_query(words, count)) {
-				index_t* and_scores = index_new(200);
-				counters_t* final_scores = counters_new();
-				run_query(ht, words, count, and_scores, final_scores);
-				index_delete(and_scores);
-				counters_delete(final_scores);
-				//bag_insert(index_to_delete, and_scores);
-				//bag_insert(counters_to_delete, final_scores);
-				
+				run_query(ht, words, count, page_directory);
 			}
 		}
 	
@@ -153,16 +138,6 @@ void process_query(char* page_directory, index_t* ht)
 		printf("KEY WORDS:> ");
 	}
 	
-	//index_t *index;
-	//counters_t *ctrs;
-	/*while ((index = bag_extract(index_to_delete)) != NULL) {
-		index_delete(index);
-	}
-	while ((ctrs = bag_extract(counters_to_delete)) != NULL) {
-		counters_delete(ctrs);
-	}
-	bag_delete(index_to_delete, NULL);
-	bag_delete(counters_to_delete, NULL);*/
 	printf("\n");
 }
 
@@ -272,25 +247,21 @@ bool is_literal(char* word)
 /* run_query() takes the index, words, and count, and actually runs the
  * query.
  */
-void run_query(index_t *ht, char** words, int count, index_t* and_scores, counters_t* final_scores)
+void run_query(index_t *ht, char** words, int count, char* page_directory)
 {
-	index_save(ht, "test_file");
+	index_t* and_scores = index_new(200);
+	counters_t* final_scores = counters_new();
 	
 	get_scores(ht, words, count, and_scores);
-
 	assertp(final_scores, "Failed to run query\n");
 
 	index_iterate(and_scores, final_scores, aggregate_scores);
-	printf("final score\n");
-	counters_print(final_scores, stdout);
-	printf("\n");	
-	
 	all_docs_t all = sort_pages(final_scores);
 	
-	print_results(all);
-	//index_delete(and_scores);
-	//counters_delete(final_scores);
-	//docs_delete(all);	
+	print_results(all, page_directory);
+	
+	index_delete(and_scores);
+	counters_delete(final_scores);
 }
 
 void docs_delete(all_docs_t all)
@@ -354,59 +325,42 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 		
 		// if the word is not and/or
 		if (!is_literal(word)) {
-			counters_t *orig = index_find(ht, word);
-			
+			counters_t *orig = index_find(ht, word);	
 			counters_t *scores = counters_new();
 			
 			if (orig != NULL) {
 			// duplicate counters
 				counters_iterate(orig, scores, duplicate_counter);
-			
 			}
 				
-			
-			
-
 			int j = i + 1;
 			char* next;
 			next = words[j];
 			while ((j < count) && (strcmp(next, "or") != 0)) {
+				
 				if (!is_literal(next)) { // not and	
-					
 					counters_t *ctrs = index_find(ht, next);
+					
 					if (ctrs == NULL) {
 						ctrs = counters_new();
 					}
-					
 															counters_intersect(scores, ctrs);
-					printf("new ctrs:\n");
-					counters_print(ctrs, stdout);
-					printf("\nscores, post intersection:\n");
-					counters_print(scores, stdout);
-
-					
-									
-															
-					//counters_delete(ctrs);	
 				}
+				
 				j++;
 				if (j < count) {
 					next = words[j];
 				}
 			}
+
 			i = j;
 			char str[12];
 			char* key = str;
 			sprintf(str, "%d", i);
 			
-			index_insert(all_scores, key, scores);
-			index_save(all_scores, key);
-
-			
+			index_insert(all_scores, key, scores);	
 		}
 	}
-
-	//return all_scores;
 }
 
 /* counter_intersect() takes two counters and changes the first one to
@@ -417,9 +371,7 @@ static void counters_intersect(counters_t *result, counters_t *ctrs)
 {
         assertp(result, "Counters intersect error\n");
         assertp(ctrs, "Counters intersect error\n");
-	printf("comparing the following:\n");
-	counters_print(result, stdout);
-	counters_print(ctrs, stdout);
+	
         two_counters_t counters = { result, ctrs };
         counters_iterate(result, &counters, counter_intersect_helper);
 }
@@ -438,9 +390,6 @@ static void counter_intersect_helper(void *arg, int key, int count)
         }
 
         counters_set(counters->result, key, num);
-	/*if (counters_get(counters->ctrs, key) < count) {
-		counters_set(counters->result, key, counters_get(counters->ctrs, key));
-	}*/
 }
 
 /* sort_pages() takes a counter and iterates over them to sort in 
@@ -501,14 +450,45 @@ static void counters_sort(void *arg, const int id, int count)
 	(all->pages)[i] = new;
 }
 
-void print_results(all_docs_t all)
+/* prints the all_docs struct and tests its functionality
+ */
+static void print_results(all_docs_t all, char* page_directory)
 {
 	all_docs_t *everything = &all;
-	int size = everything->size;
 	doc_t** pages = everything->pages;
-	for (int i = 0; i < size; i++) {
-	printf("Doc: %d, Score: %d\n", pages[i]->key, pages[i]->count);
+
+	int size = everything->size;
+	int id, count;
+	
+	if (size == 0) {
+		printf("No documents match.\n");
+	} else {
+	
+		printf("Matches %d documents (ranked):\n", size);
+		for (int i = 0; i < size; i++) {
+			id = pages[i]->key;
+			count = pages[i]->count;
+
+			char* name = make_filename(page_directory, id);
+			
+			FILE *fp = fopen(name, "r");
+			assertp(fp, "Could not open file.\n");
+			
+			char* url = readlinep(fp);
+			assertp(url, "Could not get URL.\n");
+			fclose(fp);
+			
+			printf("score %8d doc %4d: %2s\n", count, id, url);
+			
+			count_free(url);	
+			count_free(name);
+			count_free(pages[i]);
+
+		}
 	}
+	printf("-----------------------------------------------\n");
+	count_free(pages);
+	
 }
 
 /*****************************************************
