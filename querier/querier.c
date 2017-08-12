@@ -13,6 +13,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
+#include "bag.h"
 #include "counters.h"
 #include "memory.h"
 #include "pagedir.h"
@@ -49,7 +50,8 @@ bool check_query(char** words, int count);
 
 bool is_literal(char* word);
 
-void run_query(index_t *ht, char** words, int count);
+void run_query(index_t *ht, char** words, int count, index_t* and_scores, counters_t* final_scores);
+void docs_delete(all_docs_t all);
 static void aggregate_scores(void *arg, const char *key, void* ctrs);
 static void sum_scores(void *arg, const int key, int count);
 
@@ -119,7 +121,12 @@ bool check_parameters(int argc, char* argv[])
 void process_query(char* page_directory, index_t* ht)
 {
 	char* line;
-	
+	//bag_t *index_to_delete = bag_new();
+	//bag_t *counters_to_delete = bag_new();
+	//assertp(index_to_delete, "Error initializing bag.\n");
+	//assertp(counters_to_delete, "Error initializing bag.\n");
+
+
 	printf("KEY WORDS:> ");
 	while ((line = readlinep(stdin)) != NULL) {
 		char** words = count_malloc(sizeof(char*) * 20);
@@ -128,10 +135,14 @@ void process_query(char* page_directory, index_t* ht)
 		if (count != 0 && words != NULL){
 			print_query(words, count);
 			if (check_query(words, count)) {
-				run_query(ht, words, count);
-				index_delete(and_scores);
-				counters_delete(final_scores);
-
+				index_t* and_scores = index_new(200);
+				counters_t* final_scores = counters_new();
+				run_query(ht, words, count, and_scores, final_scores);
+				//index_delete(and_scores);
+				//counters_delete(final_scores);
+				//bag_insert(index_to_delete, and_scores);
+				//bag_insert(counters_to_delete, final_scores);
+				
 			}
 		}
 	
@@ -139,6 +150,17 @@ void process_query(char* page_directory, index_t* ht)
 		count_free(line);
 		printf("KEY WORDS:> ");
 	}
+	
+	//index_t *index;
+	//counters_t *ctrs;
+	/*while ((index = bag_extract(index_to_delete)) != NULL) {
+		index_delete(index);
+	}
+	while ((ctrs = bag_extract(counters_to_delete)) != NULL) {
+		counters_delete(ctrs);
+	}
+	bag_delete(index_to_delete, NULL);
+	bag_delete(counters_to_delete, NULL);*/
 	printf("\n");
 }
 
@@ -248,11 +270,11 @@ bool is_literal(char* word)
 /* run_query() takes the index, words, and count, and actually runs the
  * query.
  */
-void run_query(index_t *ht, char** words, int count)
+void run_query(index_t *ht, char** words, int count, index_t* and_scores, counters_t* final_scores)
 {
-	index_t* and_scores = index_new(200);
+	index_save(ht, "test_file");
+	
 	get_scores(ht, words, count, and_scores);
-	counters_t* final_scores = counters_new();
 	assertp(final_scores, "Failed to run query\n");
 
 	index_iterate(and_scores, final_scores, aggregate_scores);
@@ -263,7 +285,21 @@ void run_query(index_t *ht, char** words, int count)
 	print_results(all);
 	//index_delete(and_scores);
 	//counters_delete(final_scores);
-		
+	//docs_delete(all);	
+}
+
+void docs_delete(all_docs_t all)
+{
+	all_docs_t* everything = &all;
+	int size = everything->size;
+	doc_t** pages = everything->pages;
+
+	doc_t* page;
+	for (int i = 0; i < size; i++) {
+		page = pages[i];
+		count_free(&page);
+	}
+	count_free(&all);
 }
 
 /* aggregate_scores() is a helper function that loops through each counter
@@ -304,6 +340,10 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 		// if the word is not and/or
 		if (!is_literal(word)) {
 			counters_t *scores = index_find(ht, word);
+			if (scores == NULL) {
+				scores = counters_new();
+			}
+			
 			int j = i + 1;
 			char* next;
 			next = words[j];
@@ -311,8 +351,15 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 				if (!is_literal(next)) { // not and	
 					
 					counters_t *ctrs = index_find(ht, next);
-					counters_intersect(scores, ctrs);
-					counters_delete(ctrs);	
+					if (ctrs == NULL) {
+						ctrs = counters_new();
+					}
+					
+					  counters_intersect(scores, ctrs);
+					
+									
+															
+					//counters_delete(ctrs);	
 				}
 				j++;
 				if (j < count) {
@@ -324,6 +371,7 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 			char* key = str;
 			sprintf(str, "%d", i);
 			index_insert(all_scores, key, scores);
+			index_save(all_scores, key);
 		}
 	}
 
@@ -338,7 +386,8 @@ static void counters_intersect(counters_t *result, counters_t *ctrs)
 {
         assertp(result, "Counters intersect error\n");
         assertp(ctrs, "Counters intersect error\n");
-
+	counters_print(result, stdout);
+	counters_print(ctrs, stdout);
         two_counters_t counters = { result, ctrs };
         counters_iterate(result, &counters, counter_intersect_helper);
 }
@@ -357,6 +406,9 @@ static void counter_intersect_helper(void *arg, int key, int count)
         }
 
         counters_set(counters->result, key, num);
+	/*if (counters_get(counters->ctrs, key) < count) {
+		counters_set(counters->result, key, counters_get(counters->ctrs, key));
+	}*/
 }
 
 /* sort_pages() takes a counter and iterates over them to sort in 
