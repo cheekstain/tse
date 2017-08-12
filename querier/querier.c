@@ -279,8 +279,9 @@ void run_query(index_t *ht, char** words, int count, index_t* and_scores, counte
 	assertp(final_scores, "Failed to run query\n");
 
 	index_iterate(and_scores, final_scores, aggregate_scores);
+	printf("final score\n");
 	counters_print(final_scores, stdout);
-	//printf("\n");	
+	printf("\n");	
 	
 	all_docs_t all = sort_pages(final_scores);
 	
@@ -359,7 +360,12 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 						ctrs = counters_new();
 					}
 					
-					  counters_intersect(scores, ctrs);
+															counters_intersect(scores, ctrs);
+					printf("new ctrs:\n");
+					counters_print(ctrs, stdout);
+					printf("\nscores, post intersection:\n");
+					counters_print(scores, stdout);
+
 					
 									
 															
@@ -393,6 +399,7 @@ static void counters_intersect(counters_t *result, counters_t *ctrs)
 {
         assertp(result, "Counters intersect error\n");
         assertp(ctrs, "Counters intersect error\n");
+	printf("comparing the following:\n");
 	counters_print(result, stdout);
 	counters_print(ctrs, stdout);
         two_counters_t counters = { result, ctrs };
