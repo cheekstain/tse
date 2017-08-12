@@ -29,12 +29,18 @@ typedef struct two_counters {
 
 /**************** functions ****************/
 bool check_parameters(int argc, char* argv[]);
+
 void process_query(char* page_directory, index_t* ht);
 int fetch_words(char* line, char** words);
 void print_query(char** words, int count);
 bool check_query(char** words, int count);
+
 bool is_literal(char* word);
+
 void run_query(index_t *ht, char** words, int count);
+static void aggregate_scores(void *arg, const char *key, void* ctrs);
+static void sum_scores(void *arg, const int key, int count);
+
 index_t* get_scores(index_t *ht, char** words, int count);
 
 static void counters_intersect(counters_t *result, counters_t *ctrs);
@@ -222,7 +228,38 @@ bool is_literal(char* word)
  */
 void run_query(index_t *ht, char** words, int count)
 {
-	//index_t* scores = get_scores(ht, words, count);
+	index_t* and_scores = get_scores(ht, words, count);
+	counters_t* final_scores = counters_new();
+	assertp(final_scores, "Failed to run query\n");
+
+	index_iterate(and_scores, final_scores, aggregate_scores);
+	counters_print(final_scores, stdout);
+	printf("\n");
+	//rank_results()
+	//print_results()
+}
+
+/* aggregate_scores() is a helper function that loops through each counter
+ * in the index.
+ */
+static void aggregate_scores(void *arg, const char *key, void* ctrs)
+{
+	counters_t* final_scores = arg;
+	counters_t* current = ctrs;
+
+	counters_iterate(current, final_scores, sum_scores);
+}
+
+/* sum_scores() is a helper function that sums all the scores and adds them
+ * to the final counter of scores. It loops through individual counters.
+ */
+static void sum_scores(void *arg, const int key, int count)
+{
+	counters_t* final_scores = arg;
+	if (count != 0) {
+		int sum = counters_get(final_scores, key) + count;
+		counters_set(final_scores, key, sum);
+	}
 }
 
 /* get_scores() returns an index which contains the aggregated scores
@@ -292,6 +329,32 @@ static void counter_intersect_helper(void *arg, int key, int count)
 
         counters_set(counters->result, key, num);
 }
+
+/* counter_merge() takes two counters and changes the first one to
+ * the union of the two, where the ID is the same but the key
+ * is set to the added sum of both counts.
+ 
+static void counters_merge(counters_t *result, counters_t *ctrs)
+{
+	assertp(result, "Counters merge error\n");
+	assertp(ctrs, "Counters intersect error \n");
+	
+	two_counters_t counters = { result, ctrs };
+	counters_iterate(ctrs, &counters, counter_merge_helper);
+}
+
+* counter_merge_helper() assists counters_merge()
+ 
+
+static void counter_merge_helper(void *arg, int key, int count)
+{
+	two_counters_t* counters = arg;
+	
+	int sum = counters_get(counters->result, key) + count;
+	counters_set(counters->result, key, sum);
+	
+}
+*/
 
 /*****************************************************
  ******************** unit testing *******************

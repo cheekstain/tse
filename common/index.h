@@ -44,6 +44,12 @@ counters_t *index_find(index_t *ht, const char *key);
  */
 void index_delete(index_t *ht);
 
+/* Iterates through the index, takes index, arg, and function to call on 
+ * each counter
+ */
+void index_iterate(index_t *ht, void *arg,  
+                      void(*itemfunc)(void *arg, const char *key, void *item));
+
 /* Writes the data structure in the memory to an external file. Takes index
  * to be written to the file, and path name of file to write to. Writes in the
  * format "word doc_id count [doc_id count]..." one line per word.

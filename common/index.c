@@ -70,6 +70,13 @@ static void delete_helper(void *item)
 	}
 }
  
+/**************** index_iterate() ***************/
+void index_iterate(index_t *ht, void *arg, 
+			void(*itemfunc)(void *arg, const char *key, void *item))
+{
+	hashtable_iterate(ht, arg, itemfunc);
+}
+
 /*************** index_save() *****************/
 void index_save(index_t *ht, char* filename)
 {
