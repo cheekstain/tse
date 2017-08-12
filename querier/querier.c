@@ -140,8 +140,8 @@ void process_query(char* page_directory, index_t* ht)
 				index_t* and_scores = index_new(200);
 				counters_t* final_scores = counters_new();
 				run_query(ht, words, count, and_scores, final_scores);
-				//index_delete(and_scores);
-				//counters_delete(final_scores);
+				index_delete(and_scores);
+				counters_delete(final_scores);
 				//bag_insert(index_to_delete, and_scores);
 				//bag_insert(counters_to_delete, final_scores);
 				
