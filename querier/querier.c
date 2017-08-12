@@ -63,6 +63,8 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores);
 
 static void counters_intersect(counters_t *result, counters_t *ctrs);
 static void counter_intersect_helper(void *arg, int key, int count);
+static void duplicate_counter(void *arg, const int key, int count);
+
 
 void print_results(all_docs_t all);
 
@@ -328,6 +330,16 @@ static void sum_scores(void *arg, const int key, int count)
 	}
 }
 
+/* duplicate_counter() creates an identical counter arg and is passed to
+ * counters_iterate()
+ */
+static void duplicate_counter(void *arg, const int key, int count)
+{
+	counters_t* new = arg;
+	counters_set(new, key, count);
+} 
+
+
 /* get_scores() returns an index which contains the aggregated scores
  * from all and sequences. it takes the index, the array of words, and count.
  */
@@ -342,10 +354,16 @@ void get_scores(index_t *ht, char** words, int count, index_t *scores)
 		
 		// if the word is not and/or
 		if (!is_literal(word)) {
-			counters_t *scores = index_find(ht, word);
-			if (scores == NULL) {
-				scores = counters_new();
+			counters_t *orig = index_find(ht, word);
+			
+			counters_t *scores = counters_new();
+			
+			if (orig != NULL) {
+			// duplicate counters
+				counters_iterate(orig, scores, duplicate_counter);
+			
 			}
+				
 			
 			
 
