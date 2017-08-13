@@ -464,7 +464,7 @@ static void print_results(all_docs_t all, char* page_directory)
 			assertp(url, "Could not get URL.\n");
 			fclose(fp);
 			
-			printf("score %8d doc %4d: %2s\n", count, id, url);
+			printf("score %1d doc%2d: %2s\n", count, id, url);
 			
 			count_free(url);	
 			count_free(name);
@@ -581,12 +581,13 @@ int test_get_scores()
 	EXPECT(check_query(words0, count0));
 	
 	index_t *ht = index_load("./index3");
-	index_t* scores = get_scores(ht, words0, count0);
+	index_t *scores = index_new(100);
+	get_scores(ht, words0, count0, scores);
 	index_save(scores, "test_result");
 
 	count_free(words0);
-	count_free(ht);
-	count_free(scores);
+	index_delete(ht);
+	index_delete(scores);
 
 	END_TEST_CASE;
 	return TEST_RESULT;
