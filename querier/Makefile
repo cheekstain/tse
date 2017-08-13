@@ -21,6 +21,7 @@ unittest: querier.c $(LIBS)
 	$(CC) $(CFLAGS) -DUNIT_TEST querier.c $(LIBS) -o unittest
 
 unit: unittest
+	./unittest
 
 clean:
 	rm -f *~ *.o *.dSYM

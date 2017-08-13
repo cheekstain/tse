@@ -264,20 +264,6 @@ void run_query(index_t *ht, char** words, int count, char* page_directory)
 	counters_delete(final_scores);
 }
 
-void docs_delete(all_docs_t all)
-{
-	all_docs_t* everything = &all;
-	int size = everything->size;
-	doc_t** pages = everything->pages;
-
-	doc_t* page;
-	for (int i = 0; i < size; i++) {
-		page = pages[i];
-		count_free(&page);
-	}
-	count_free(&all);
-}
-
 /* aggregate_scores() is a helper function that loops through each counter
  * in the index.
  */
